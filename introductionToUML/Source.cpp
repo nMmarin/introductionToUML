@@ -1,39 +1,54 @@
-#include<iostream>
+#include <iostream>
 #include <conio.h>
-#include<Windows.h>
-#include<thread>
+#include <windows.h>
+#include <thread>
 using namespace std;
 
-#define MIN_TANK_VOLUME 20	//SMART for two
-#define MAX_TANK_VOLUME	150	//Dodge RAM
+#define MIN_TANK_VOLUME 20
+#define MAX_TANK_VOLUME 150
+#define MIN_ENGINE_CONSUMPTION 3
+#define MAX_ENGINE_CONSUMPTION 30
+#define MAX_SPEED_LOW_LIMIT 120
+#define MAX_SPEED_HIGH_LIMIT 400
 #define Escape 27
 #define Enter 13
- 
 
+#define Up 72 //speed up
+#define Down 80 //slow down
+#define Space 32 //engine on/off
 class Tank
 {
-	const int VOLUME;	//Объем бака является его характеристикой
-	double fuel_level;	//Уровень топлива отображает состояние бака
+	const int VOLUME;
+	double fuelLevel;
 public:
-	int get_VOLUME()const
+	int getVOLUME() const
 	{
 		return VOLUME;
 	}
-	double get_fuel_level()const
+	double getFuelLevel() const
 	{
-		return fuel_level;
+		return fuelLevel;
 	}
 	void fill(double amount)
 	{
-		if (amount < 0)return;
-		fuel_level += amount;
-		if (fuel_level > VOLUME)fuel_level = VOLUME;
+		if (amount < 0)
+		{
+			return;
+		}
+		fuelLevel += amount;
+		if (fuelLevel > VOLUME)
+		{
+			fuelLevel = VOLUME;
+		}
 	}
-	double give_fuel(double amount)
+	double giveFuel(double amount)
 	{
-		fuel_level -= amount;
-		if (fuel_level < 0)fuel_level = 0;
-		return fuel_level;
+		fuelLevel -= amount;
+		if (fuelLevel < 0)
+		{
+			fuelLevel = 0;
+		}
+		return fuelLevel;
 	}
 	Tank(int volume) :
 		VOLUME
@@ -43,108 +58,158 @@ public:
 			volume
 		)
 	{
-		//l-value = r-value;
-		//VOLUME = volume;
-		fuel_level = 0;
+		fuelLevel = 0;
 		cout << "Tank is ready " << this << endl;
 	}
 	~Tank()
 	{
 		cout << "Tank is over " << this << endl;
 	}
-	void info()const
+	void info() const
 	{
-		cout << "Volume:   " << VOLUME << " liters;\n";
-		cout << "Fuel leve:" << get_fuel_level() << " liters;\n";
+		cout << "VOLUME: " << VOLUME << " liters" << endl
+			<< "Fuel level: " << getFuelLevel() << " liters" << endl;
 	}
 };
-#define min_engine_consumption 3
-#define max_engine_consumption 30
 class Engine
 {
-	const double consumption;
-	double consumption_per_second;
-	bool is_started;
+	const double CONSUMPTION;
+	double consumptionPerSecond;
+	bool isStarted;
+
 public:
-	double get_consumption()const
+	double getCONSUMPTION() const
 	{
-		return consumption;
+		return CONSUMPTION;
 	}
-	double get_consumption_per_second()
+	double getConsumptionPerSecond() const
 	{
-		return consumption_per_second;
+		return consumptionPerSecond;
+	}
+	void setConsumptionPerSecond(int speed)
+	{
+		if (started())
+		{
+			consumptionPerSecond = CONSUMPTION * 3e-5 + CONSUMPTION * 0.0000283 * speed;//Я не знаю, насколько реалистично потребление топлива, я просто тыкала в калькулятор, пока не получила усредненные значения из интернета
+		}
+		else
+		{
+			consumptionPerSecond = 0;
+		}
+
 	}
 	void start()
 	{
-		is_started = true;
+		isStarted = true;
+
 	}
 	void stop()
 	{
-		is_started = false;
+		isStarted = false;
 	}
-	bool started()
+	bool started() const
 	{
-		return is_started;
-	}
+		return isStarted;
 
-	void set_consumptoin_per_second()
-	{
-		consumption_per_second = consumption * 3e-5;
 	}
-	
-	Engine(int consumption):consumption
+	void info() const
+	{
+		cout << "Consumption:\n:";
+		cout << CONSUMPTION << " liters/100km" << endl;
+		cout << consumptionPerSecond << " liters/second" << endl;
+	}
+	Engine(double consumption) : CONSUMPTION
 	(
-		consumption<min_engine_consumption?min_engine_consumption:
-		consumption>max_engine_consumption?max_engine_consumption:
+		consumption < MIN_ENGINE_CONSUMPTION ? MIN_ENGINE_CONSUMPTION :
+		consumption > MAX_ENGINE_CONSUMPTION ? MAX_ENGINE_CONSUMPTION :
 		consumption
 	)
 	{
-		//this->consumption = consumption;
-		set_consumptoin_per_second();
-		is_started = false;
-		cout << "engine is ready" << endl;
+		isStarted = false;
+		setConsumptionPerSecond(0);
+		cout << "Engine is ready: " << this << endl;
 	}
 	~Engine()
 	{
 		cout << "Engine is over: " << this << endl;
 	}
-	void info()const
-	{
-		cout << "consumption:\n";
-		cout << consumption << " litres/100km\n";
-		cout << consumption_per_second << " litres/seconds\n";
-	}
-
 
 };
-#define max_speed_low_limit 120
-#define max_speed_high_limit 400
 class Car
 {
 	Engine engine;
 	Tank tank;
 	int speed;
-	const int max_speed;
-	bool driver_inside;
-	struct 
+	const unsigned int MAX_SPEED;
+	bool driverInside;
+	struct
 	{
-		std::thread panel_thread;
-	}control_threads;
+		std::thread panelThread;
+		std::thread consumptionThread;
+	} controlThreads;
 public:
-	Car(int max_speed, double consumption,int volume):engine(consumption), tank(volume),max_speed
-		(max_speed<max_speed_low_limit? max_speed_low_limit:
-			max_speed>max_speed_high_limit? max_speed_high_limit:
-			max_speed
+	int getSpeed() const
+	{
+		return speed;
+	}
+	Car(int maxSpeed, double consumption, int volume) : engine(consumption), tank(volume),
+		MAX_SPEED
+		(
+			maxSpeed < MAX_SPEED_LOW_LIMIT ? MAX_SPEED_LOW_LIMIT :
+			maxSpeed > MAX_SPEED_HIGH_LIMIT ? MAX_SPEED_HIGH_LIMIT :
+			maxSpeed
 		)
 	{
 		speed = 0;
-		driver_inside = false;
-		cout << "Your car is  ready" << this << endl;
-		cout<<"press Enter to get in : " << endl; 
+		driverInside = false;
+		cout << "Your car is ready: " << this << endl;
+		cout << "Press Enter to get in: " << endl;
 	}
 	~Car()
 	{
-		cout << "car is over" << endl;
+		cout << "Car is over" << this << endl;
+	}
+	void info() const
+	{
+		engine.info();
+		tank.info();
+		cout << "max speed: " << MAX_SPEED << " km/h" << endl;
+	}
+	void getIn()
+	{
+		driverInside = true;
+		controlThreads.panelThread = std::thread(&Car::panel, this);
+	}
+	void getOut()
+	{
+		driverInside = false;
+		if (controlThreads.panelThread.joinable())
+		{
+			controlThreads.panelThread.join();
+		}
+		system("cls");
+		cout << "Вы вышли из машины" << endl;
+	}
+	void panel() const
+	{
+		while (driverInside)
+		{
+			system("cls");
+			cout << "Speed: " << speed << " km/h\n";
+			cout << "Engine is: " << (engine.started() ? "started " : "stopped ") << endl;
+			cout << "Fuel level: " << tank.getFuelLevel() << " liters" << endl;
+			cout << "Consumption: " << engine.getConsumptionPerSecond() << " liters/second" << endl;
+			Sleep(1000);
+		}
+
+	}
+	void spendFuel()
+	{
+		while (engine.started())
+		{
+			tank.giveFuel(engine.getConsumptionPerSecond());
+			Sleep(1000);
+		}
 	}
 	void control()
 	{
@@ -154,78 +219,111 @@ public:
 			key = _getch();
 			switch (key)
 			{
-			case Enter: driver_inside ? get_out() : get_in(); break;
+			case Enter:
+				if (driverInside and !speed) getOut();
+				else if (!driverInside and !speed) getIn();
+				break;
 			case Escape:
-				get_out();
+				stopEngine();//Чтобы заджойнить поток потребления топлива
+				getOut();
+				break;
+				//HW
+			case Up:
+				if (driverInside and engine.started())
+				{
+					speedUp();
+				}
+				break;
+			case Down:
+				if (driverInside and engine.started())
+				{
+					slowDown();
+				}
+				break;
+			case Space:
+				if (engine.started() and !speed) stopEngine();
+				else if (!engine.started() and !speed) startEngine();
+				break;
 			}
-		} while (key!=Escape);
+
+
+		} while (key != Escape);
 	}
-	void get_in()
+	void startEngine()//HW
 	{
-		driver_inside = true;
-		//panel();
-		control_threads.panel_thread = std::thread(&Car::panel, this);
+		engine.start();
+		engine.setConsumptionPerSecond(0);
+		cout << "Двигатель запущен\n";
+		controlThreads.consumptionThread = std::thread(&Car::spendFuel, this);
+
 	}
-	void get_out()
+	void stopEngine()//HW
 	{
-		driver_inside = false;
-		if (control_threads.panel_thread.joinable())control_threads.panel_thread.join();
-		system("cls");
-		cout << "you got out of the car" << endl;
-	}
-	void panel()
-	{	
-		while (driver_inside)
+		engine.stop();
+		engine.setConsumptionPerSecond(0);
+		if (controlThreads.consumptionThread.joinable())
 		{
-			system("cls");
-			cout << "Speed: " << speed << "km/h" << endl;
-			cout << "Engine is" << (engine.started() ? "starterd" : "stoped") << endl;
-			cout << "Fuel level" << tank.get_fuel_level() << "litres" << endl;
-			cout << "consumption" << engine.get_consumption_per_second() << "litres/sec" << endl;
-			Sleep(600);
+			controlThreads.consumptionThread.join();
 		}
-	
+		cout << "Двигатель остановлен\n";
 	}
-	void info()const
+	void fillTank(int amount)//HW
 	{
-		engine.info();
-		tank.info();
-		cout << "Max speed: " << max_speed <<"km/h"<< endl;
+		tank.fill(amount);
 	}
-	/*void idle_speed(Engine engine,Tank tank )
+	void speedUp()//HW
 	{
-		do
+		//Ускоряемся на 10км/ч при нажатии кнопки
+		speed += 10;
+		if (speed > MAX_SPEED)
 		{
-			tank.get_fuel_level()engine.set_consumptoin_per_second()
-		} while (engine.started());
-	}*/
+			speed = MAX_SPEED;
+		}
+		engine.setConsumptionPerSecond(speed);
+	}
+	void slowDown()//HW
+	{
+		//Замедляемся на 10км/ч при нажатии кнопки
 
+		if (speed > 0)
+		{
+			speed -= 10;
+		}
+		engine.setConsumptionPerSecond(speed);
+	}
 };
-//#define TANK_CHECK// #define - определить 
-// Директива define создает макроопределение (макрос)
-//Директива указание комплилятору на выполнение некоторых действий
-
+//#define TANK_CHECK
+//define - определить
+//Директива дефайн создает макроопределение (макрос)
+//Директива - указание компилятору на выполнение некоторых действий
+#define ENGINE_CHECK
 void main()
 {
 	setlocale(LC_ALL, "");
-#ifdef TANK_CHECK
+
+#ifdef TANK_CHECK //Если определено TANK_CHECK, то код до директивы endif будет виден компилятору
+
 	Tank tank(3000);
+	Engine engine;
 	int fuel;
 	do
 	{
 		tank.info();
-		cout << "Введите объем топлива: "; cin >> fuel;
+		cout << "Введите объем топлива: ";
+		cin >> fuel;
 		tank.fill(fuel);
+		engine.info();
+		engine.start();//If engine is on, consumption per second = IDLE_CONSUMPTION = 0.0003 
+		engine.info();
+		engine.stop();//If engine is off, consumption per second = 0 
+
 	} while (fuel);
-#endif // DEBUG
-	//Engine engine(10);
-	//engine.info();
-	//engine.start();
-	Car bmw(250,10,80);
-	//bmw.info();
+	tank.info();
+#endif
+	/*Engine engine(10);
+	engine.info();*/
+	Car bmw(250, 10, 80);
+	bmw.fillTank(80);//Filling up our rattletrap before the start
 	bmw.control();
-	
 
-
-
-};
+}
