@@ -6,9 +6,9 @@ using namespace std;
 #define delimiter "\n---------------------------\n"
 class Player
 {
-	
-	public:
-		virtual Player* clone()const = 0;
+
+public:
+	virtual unique_ptr<Player> clone() const = 0;
 	//Player(const std:: string& name,int id):name(name),id(id){}
 	virtual ~Player() {}
 	virtual void print()const = 0;
@@ -22,64 +22,64 @@ class CarPlayer :public Player
 	std::string name;
 	int id;
 public:
-	CarPlayer(const std::string& name, int id) :name(name),id(id)
+	CarPlayer(const std::string& name, int id) :name(name), id(id)
 	{
 		cout << "CarConstructor:\t" << this << endl;
 	}
 	~CarPlayer()
 	{
-		cout << "CarDestructor"<<this << endl;
+		cout << "CarDestructor" << this << endl;
 
 	}
 	void print()const override
 	{
 		cout << this << ":\t" << name << " " << id << endl;
 	}
-	Player* clone()const override
+	unique_ptr<Player> clone()const override
 	{
-		return new CarPlayer(*this);
+		return make_unique<CarPlayer>(*this);
 	}
 };
- 
+
 class BikePlayer :public Player
 {
 	std::string name;
 	int id;
-	public:
-		BikePlayer(const std::string name, int id) :name(name), id(id)
-		{
-			cout << "BikeCostructor:" << this << endl;
-		}
-		~BikePlayer()
-		{
-			cout << "BikeDestructor:" << this << endl;
-		}
-		void print()const override
-		{
-			cout << this << ":\t" << name << "" << id << endl;
-		}
-		Player* clone()const override
-		{
-			return new BikePlayer(*this);
-		}
+public:
+	BikePlayer(const std::string name, int id) :name(name), id(id)
+	{
+		cout << "BikeCostructor:" << this << endl;
+	}
+	~BikePlayer()
+	{
+		cout << "BikeDestructor:" << this << endl;
+	}
+	void print()const override
+	{
+		cout << this << ":\t" << name << "" << id << endl;
+	}
+	unique_ptr<Player>clone()const override
+	{
+		return make_unique<BikePlayer>(*this);
+	}
 };
 
-enum PlayerType{CAR,BIKE};
+enum PlayerType { CAR, BIKE };
 class PlayerFactory
 {
 	std::map<PlayerType, Player*> players;
 public:
 	PlayerFactory()
 	{
-		players[CAR] = new CarPlayer("BMW",735);
-		players[BIKE] = new BikePlayer("Harley Davidson",200);
+		players[CAR] = new CarPlayer("BMW", 735);
+		players[BIKE] = new BikePlayer("Harley Davidson", 200);
 	}
 	~PlayerFactory()
 	{
 		delete players[CAR];
 		delete players[BIKE];
 	}
-	Player* CreatePlayer(PlayerType type)
+	unique_ptr<Player> CreatePlayer(PlayerType type)
 	{
 		return players[type]->clone();
 	}
@@ -90,7 +90,7 @@ void main()
 {
 	setlocale(LC_ALL, "");
 #ifdef PROBLEM
-const Player car_player_template("Car player", 100);
+	const Player car_player_template("Car player", 100);
 	const Player bike_player_template("bike player", 200);
 	car_player_template.print();
 	bike_player_template.print();
@@ -100,16 +100,16 @@ const Player car_player_template("Car player", 100);
 	bike_player.print();
 #endif // PROBLEM
 	PlayerFactory factory;
-	
+
 	cout << delimiter << endl;
-	Player* car_player = factory.CreatePlayer(CAR);
+	std::unique_ptr<Player> car_player = factory.CreatePlayer(CAR);
 	car_player->print();
 	cout << delimiter << endl;
-	Player* bike_player = factory.CreatePlayer(BIKE);
+	std::unique_ptr<Player> bike_player = factory.CreatePlayer(BIKE);
 	bike_player->print();
 	cout << delimiter << endl;
-	delete bike_player;
+	/*delete bike_player;
 	delete car_player;
-	cout << delimiter << endl;
-	
+	cout << delimiter << endl;*/
+
 }
