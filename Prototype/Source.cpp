@@ -1,95 +1,104 @@
-#include<iostream>
-#include<string>
-#include<map>
-#include<memory>
+﻿#include <iostream>
+#include <string>
+#include <map>
+#include <memory>
+#define delimeter "\n------------------------------------------------\n\n"
+using std::cin;
+using std::cout;
+using std::endl;
 
-
-using namespace std;
-#define delimiter "\n---------------------------\n"
 class Player
 {
-
 public:
-	virtual unique_ptr<Player> clone() const = 0;
-	//Player(const std:: string& name,int id):name(name),id(id){}
-	virtual ~Player() {}
-	virtual void print()const = 0;
-	/*{
-		cout <<this <<"\t" << name << "\t" << id << endl;
-	}*/
+	virtual std::unique_ptr<Player> clone() const = 0;
+	/*Player(const std::string& name, int id) : name(name), id(id)
+	{
 
+	}*/
+	virtual ~Player()
+	{
+
+	}
+	virtual void print() const = 0;
 };
-class CarPlayer :public Player
+class CarPlayer : public Player
 {
 	std::string name;
 	int id;
 public:
-	CarPlayer(const std::string& name, int id) :name(name), id(id)
+	CarPlayer(const std::string& name, int id) : name(name), id(id)
 	{
-		cout << "CarConstructor:\t" << this << endl;
+		cout << "Car ctor: " << this << endl;
 	}
 	~CarPlayer()
 	{
-		cout << "CarDestructor" << this << endl;
-
+		cout << "car dtor: " << this << endl;
 	}
-	void print()const override
+	void print() const override
 	{
 		cout << this << ":\t" << name << " " << id << endl;
 	}
-	unique_ptr<Player> clone()const override
+	std::unique_ptr<Player>clone() const override
 	{
-		return make_unique<CarPlayer>(*this);
+		return std::make_unique<CarPlayer>(*this);
 	}
-};
 
-class BikePlayer :public Player
+};
+class BikePlayer : public Player
 {
 	std::string name;
 	int id;
 public:
-	BikePlayer(const std::string name, int id) :name(name), id(id)
+	BikePlayer(const std::string& name, int id) : name(name), id(id)
 	{
-		cout << "BikeCostructor:" << this << endl;
+		cout << "Bike ctor: " << this << endl;
 	}
 	~BikePlayer()
 	{
-		cout << "BikeDestructor:" << this << endl;
+		cout << "Bike dtor: " << this << endl;
 	}
-	void print()const override
+	void print() const override
 	{
-		cout << this << ":\t" << name << "" << id << endl;
+		cout << this << ":\t" << name << " " << id << endl;
 	}
-	unique_ptr<Player>clone()const override
+	std::unique_ptr<Player> clone() const override
 	{
-		return make_unique<BikePlayer>(*this);
+		return std::make_unique<BikePlayer>(*this);
 	}
 };
-
-enum PlayerType { CAR, BIKE };
+enum PlayerType
+{
+	CAR, BIKE
+};
 class PlayerFactory
 {
-	static std::map<PlayerType,unique_ptr<Player>> players;
-	static void Init()
+	static std::map<PlayerType, std::unique_ptr<Player>> players;
+	static void init()
 	{
-		if(players.find(CAR)==players.end())players[CAR] = make_unique<CarPlayer>(CarPlayer("BMW", 735));
-		if(players.find(BIKE)==players.end())players[BIKE] = make_unique<BikePlayer>(BikePlayer("Harley Davidson", 200));
+		static bool isInitialized = false;
+		if (!isInitialized)
+		{
+			/*cout << "�������������� ���:\n";*/
+			players[CAR] = std::make_unique<CarPlayer>("BMW", 735);
+			players[BIKE] = std::make_unique<BikePlayer>("Harley Davidson", 200);
+			isInitialized = true;
+			/*cout << "������������� ���������\n"; */
+		}
 	}
-	
-
 public:
+	static std::unique_ptr<Player> createPlayer(PlayerType type)
+	{
+		init();
+		return players[type]->clone();
+	}
 	/*~PlayerFactory()
 	{
 		delete players[CAR];
 		delete players[BIKE];
 	}*/
-	static unique_ptr<Player> CreatePlayer(PlayerType type)
-	{
-		Init();
-		return players[type]->clone();
-	}
 };
-//#define PROBLEM 
+std::map<PlayerType, std::unique_ptr<Player>> PlayerFactory::players;
+//#define PROBLEM
 //#define SOLUTION_1
 #define SOLUTION_2
 void main()
@@ -97,7 +106,7 @@ void main()
 	setlocale(LC_ALL, "");
 #ifdef PROBLEM
 	const Player car_player_template("Car player", 100);
-	const Player bike_player_template("bike player", 200);
+	const Player bike_player_template("Bike player", 200);
 	car_player_template.print();
 	bike_player_template.print();
 	Player car_player = car_player_template;
@@ -105,27 +114,25 @@ void main()
 	Player bike_player = bike_player_template;
 	bike_player.print();
 #endif // PROBLEM
-
-#ifdef SOLUTION_1
+#ifdef SOLUTION_1 //Ctrl K + S
 	PlayerFactory factory;
-
-	cout << delimiter << endl;
-	std::unique_ptr<Player> car_player = factory.CreatePlayer(CAR);
+	cout << delimeter;
+	std::unique_ptr<Player> car_player = factory.createPlayer(CAR);
 	car_player->print();
-	cout << delimiter << endl;
-	std::unique_ptr<Player> bike_player = factory.CreatePlayer(BIKE);
+
+	cout << delimeter;
+	std::unique_ptr<Player> bike_player = factory.createPlayer(BIKE);
 	bike_player->print();
-	cout << delimiter << endl;
-	/*delete bike_player;
-	delete car_player;
-	cout << delimiter << endl;*/
+	cout << delimeter;
 #endif // SOLUTION_1
-
-	std::unique_ptr<Player> car_player = PlayerFactory::CreatePlayer(CAR);
+#ifdef SOLUTION_2
+	cout << delimeter;
+	std::unique_ptr<Player> car_player = PlayerFactory::createPlayer(CAR);
 	car_player->print();
-	cout << delimiter << endl;
-	std::unique_ptr<Player> bike_player = PlayerFactory::CreatePlayer(BIKE);
+	cout << delimeter;
+	std::unique_ptr<Player> bike_player = PlayerFactory::createPlayer(BIKE);
 	bike_player->print();
-
+	cout << delimeter;
+#endif // SOLUTION_2
 
 }
